@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>희귀 아이템 뽑기</title>
+
+  <!-- Google Font + 고급 CSS -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+    body {
+      margin: 0;
+      font-family: 'Jua', sans-serif;
+      background: linear-gradient(145deg, #202040, #543864);
+      color: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 30px;
+      user-select: none;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 5px black;
+    }
+
+    button {
+      font-size: 1.5rem;
+      padding: 15px 40px;
+      background: linear-gradient(to right, #43cea2, #185a9d);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      transition: background 0.3s ease, transform 0.15s ease;
+    }
+    button:hover {
+      background: linear-gradient(to right, #6af2bc, #2a7dc5);
+      transform: scale(1.05);
+    }
+    button:active {
+      transform: scale(0.95);
+    }
+
+    #result {
+      margin-top: 30px;
+      font-size: 1.5rem;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      max-width: 600px;
+      word-break: break-word;
+      text-align: center;
+      box-shadow: 0 0 18px rgba(0,0,0,0.5);
+      min-height: 3em;
+      line-height: 1.4em;
+    }
+        #userStatus {
+      margin-bottom: 15px;
+      font-size: 1.3rem;
+      min-height: 1.5em;
+      color: #aaf;
+    }
+  </style>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+  <h1>희귀 아이템 뽑기</h1>
+    <div id="userStatus">로그인 상태를 확인 중입니다...</div>
+  <div>
+    <button id="loginBtn">Google 로그인</button>
+    <button id="logoutBtn" style="display:none;">로그아웃</button>
+  </div>
+  <button id="drawBtn">뽑기하기</button>
+  <div id="result">아이템을 뽑아보세요!</div>
+
+    <section id="inventory" style="display:none;">
+    <h2>인벤토리</h2>
+    <ul id="inventoryList"></ul>
+    <div id="totalMoney">보유 금액: 0</div>
+  </section>
+
+  <script>
+    // Firebase 설정 및 초기화
+    const firebaseConfig = {
+      apiKey: "AIzaSyDugT2jmkz5SHMXmOE1IRnkooqoK-1ezXQ",
+      authDomain: "raregacha-c22c7.firebaseapp.com",
+      projectId: "raregacha-c22c7",
+      storageBucket: "raregacha-c22c7.firebasestorage.app",
+      messagingSenderId: "271926804314",
+      appId: "1:271926804314:web:96cd484461a2305e863d63",
+      measurementId: "G-GJPLSJBLJD"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+  // DOM 요소
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const userStatus = document.getElementById("userStatus");
+  const drawBtn = document.getElementById("drawBtn");
+  const cooldownTimer = document.getElementById("cooldownTimer");
+  const inventorySection = document.getElementById("inventory");
+  const inventoryList = document.getElementById("inventoryList");
+  const totalMoneyElem = document.getElementById("totalMoney");
+    // 아이템 & 희귀도
+    const items = [
+      { name: "돌검", rarity: "C" },
+      { name: "철검", rarity: "C" },
+      { name: "은검", rarity: "B" },
+      { name: "불꽃검", rarity: "B" },
+      { name: "용의검", rarity: "A" },
+      { name: "천사의 검", rarity: "S" },
+      { name: "전설의 검", rarity: "UR" },
+    ];
+    const rarityRates = {
+      C: 0.4, B: 0.3, A: 0.15, S: 0.1, UR: 0.05
+    };
+
+      const rarityPrices = {
+    C: 5, B: 10, A: 15, S: 20, UR: 25
+  };
+
+    // 전역 변수 (로컬스토리지 불러오기)
+  let pullCount = parseInt(localStorage.getItem("pullCount") || "0");
+  let lastDrawTime = parseInt(localStorage.getItem("lastDrawTime") || "0");
+  if (!lastDrawTime) lastDrawTime = 0;
+  let totalMoney = parseInt(localStorage.getItem("totalMoney") || "0");
+  let inventory = JSON.parse(localStorage.getItem("inventory") || "[]");
+
+    // 접두사 조건
+    const prefixConditions = [
+      // 배터리 관련 (배터리 API 적용)
+      { prefix: "배터리 2%의 ", condition: ctx => ctx.battery === 2 },
+      { prefix: "배터리 7%의 ", condition: ctx => ctx.battery === 7 },
+      { prefix: "배터리 36%의 ", condition: ctx => ctx.battery === 36 },
+      { prefix: "배터리 44%의 ", condition: ctx => ctx.battery === 44 },
+      { prefix: "배터리 66%의 ", condition: ctx => ctx.battery === 66 },
+      { prefix: "배터리 69%의 ", condition: ctx => ctx.battery === 69 },
+      { prefix: "배터리 77%의 ", condition: ctx => ctx.battery === 77 },
+      { prefix: "배터리 100%의 ", condition: ctx => ctx.battery === 100 },
+      { prefix: "배터리 5%의 ", condition: ctx => ctx.battery === 5 },
+
+      // 초 단위
+      { prefix: "초 5초의 ", condition: ctx => ctx.seconds === 5 },
+      { prefix: "초 15초의 ", condition: ctx => ctx.seconds === 15 },
+      { prefix: "초 20초의 ", condition: ctx => ctx.seconds === 20 },
+      { prefix: "초 25초의 ", condition: ctx => ctx.seconds === 25 },
+
+      // 분 단위
+      { prefix: "분 10분의 ", condition: ctx => ctx.minute === 10 },
+            { prefix: "분 15분의 ", condition: ctx => ctx.minute === 15 },
+                  { prefix: "분 20분의 ", condition: ctx => ctx.minute === 20 },
+                        { prefix: "분 35분의 ", condition: ctx => ctx.minute === 35 },
+
+      { prefix: "분 30분의 ", condition: ctx => ctx.minute === 30 },
+      { prefix: "분 45분의 ", condition: ctx => ctx.minute === 45 },
+            { prefix: "분 50분의 ", condition: ctx => ctx.minute === 50 },
+
+      // 시 단위
+      { prefix: "시 0시의 ", condition: ctx => ctx.hour === 0 },
+            { prefix: "시 1시의 ", condition: ctx => ctx.hour === 1 },
+                  { prefix: "시 2시의 ", condition: ctx => ctx.hour === 2 },
+                        { prefix: "시 3시의 ", condition: ctx => ctx.hour === 3 },
+                              { prefix: "시 5시의 ", condition: ctx => ctx.hour === 5 },
+                                    { prefix: "시 7시의 ", condition: ctx => ctx.hour === 7 },
+      { prefix: "시 6시의 ", condition: ctx => ctx.hour === 6 },
+            { prefix: "시 8시의 ", condition: ctx => ctx.hour === 8 },
+                  { prefix: "시 9시의 ", condition: ctx => ctx.hour === 9 },
+                        { prefix: "시 10시의 ", condition: ctx => ctx.hour === 10 },
+                              { prefix: "시 11시의 ", condition: ctx => ctx.hour === 11 },
+                                    { prefix: "시 12시의 ", condition: ctx => ctx.hour === 12 },
+                                    
+
+      { prefix: "시 13시의 ", condition: ctx => ctx.hour === 13 },
+       { prefix: "시 14시의 ", condition: ctx => ctx.hour === 14 },
+        { prefix: "시 15시의 ", condition: ctx => ctx.hour === 15 },
+         { prefix: "시 16시의 ", condition: ctx => ctx.hour === 16 },
+          { prefix: "시 17시의 ", condition: ctx => ctx.hour === 17 },
+      { prefix: "시 18시의 ", condition: ctx => ctx.hour === 18 },
+       { prefix: "시 19시의 ", condition: ctx => ctx.hour === 19 },
+        { prefix: "시 20시의 ", condition: ctx => ctx.hour === 20 },
+         { prefix: "시 21시의 ", condition: ctx => ctx.hour === 21 },
+          { prefix: "시 22시의 ", condition: ctx => ctx.hour === 22 },
+           { prefix: "시 23시의 ", condition: ctx => ctx.hour === 23 },
+
+      // 요일
+      { prefix: "일요일의 ", condition: ctx => ctx.weekday === 0 },
+      { prefix: "월요일의 ", condition: ctx => ctx.weekday === 1 },
+      { prefix: "화요일의 ", condition: ctx => ctx.weekday === 2 },
+      { prefix: "수요일의 ", condition: ctx => ctx.weekday === 3 },
+      { prefix: "목요일의 ", condition: ctx => ctx.weekday === 4 },
+      { prefix: "금요일의 ", condition: ctx => ctx.weekday === 5 },
+      { prefix: "토요일의 ", condition: ctx => ctx.weekday === 6 },
+
+      // 뽑기 횟수
+      { prefix: "100+ 뽑기의 ", condition: ctx => ctx.pullCount >= 100 },
+      { prefix: "200+ 뽑기의 ", condition: ctx => ctx.pullCount >= 200 },
+
+      // 유입 경로
+      { prefix: "구글러의 ", condition: ctx => ctx.referrer.includes("google") },
+      { prefix: "네이버 유저의 ", condition: ctx => ctx.referrer.includes("naver") },
+
+      // 5,10,15분만에 다시 뽑기
+      { prefix: "5분만에 다시 뽑은 ", condition: ctx => ctx.timeSinceLastDraw >= 5*60*1000 && ctx.timeSinceLastDraw < 10*60*1000 },
+      { prefix: "10분만에 다시 뽑은 ", condition: ctx => ctx.timeSinceLastDraw >= 10*60*1000 && ctx.timeSinceLastDraw < 15*60*1000 },
+      { prefix: "15분만에 다시 뽑은 ", condition: ctx => ctx.timeSinceLastDraw >= 15*60*1000 },
+
+      // 화면 켜진 시간 (10분 단위, 높은 시간 우선)
+      { prefix: "50분 이상 켠 ", condition: ctx => ctx.screenTime >= 50*60*1000 },
+      { prefix: "40분 이상 켠 ", condition: ctx => ctx.screenTime >= 40*60*1000 && ctx.screenTime < 50*60*1000 },
+      { prefix: "30분 이상 켠 ", condition: ctx => ctx.screenTime >= 30*60*1000 && ctx.screenTime < 40*60*1000 },
+      { prefix: "20분 이상 켠 ", condition: ctx => ctx.screenTime >= 20*60*1000 && ctx.screenTime < 30*60*1000 },
+      { prefix: "10분 이상 켠 ", condition: ctx => ctx.screenTime >= 10*60*1000 && ctx.screenTime < 20*60*1000 },
+
+      // 플랫폼
+      { prefix: "윈도우의 ", condition: ctx => ctx.platform === "Windows" },
+      { prefix: "안드로이드의 ", condition: ctx => ctx.platform === "Android" },
+      { prefix: "iOS의 ", condition: ctx => ctx.platform === "iOS" },
+
+      // 밝기 (시뮬레이션 고정값)
+      { prefix: "최대 밝기의 ", condition: ctx => ctx.brightness === "max" },
+      { prefix: "최저 밝기의 ", condition: ctx => ctx.brightness === "min" },
+
+      // 블루투스 연결 (시뮬레이션)
+      { prefix: "블루투스 연결된 ", condition: ctx => ctx.bluetoothConnected === true },
+
+      // 날씨 (시뮬레이션)
+      { prefix: "맑음의 ", condition: ctx => ctx.weather === "clear" },
+      { prefix: "비오는 ", condition: ctx => ctx.weather === "rain" },
+      { prefix: "흐린 ", condition: ctx => ctx.weather === "cloudy" },
+      { prefix: "눈 오는 ", condition: ctx => ctx.weather === "snow" },
+    ];
+
+    // 랜덤 아이템 뽑기 함수
+    function getRandomItem() {
+      const rand = Math.random();
+      let cumulative = 0;
+      for (const [rarity, rate] of Object.entries(rarityRates)) {
+        cumulative += rate;
+        if (rand <= cumulative) {
+          const filtered = items.filter(i => i.rarity === rarity);
+          return filtered[Math.floor(Math.random() * filtered.length)];
+        }
+      }
+      return items[0]; // 기본값
+    }
+
+    // 배터리 상태 비동기 획득 함수
+    async function getBatteryLevel() {
+      if (navigator.getBattery) {
+        try {
+          const battery = await navigator.getBattery();
+          return Math.floor(battery.level * 100);
+        } catch {
+          return 100; // 실패 시 기본 100%
+        }
+      }
+      return 100; // 지원 안 할 경우 기본 100%
+    }
+
+    // 컨텍스트 비동기 함수
+    async function getContext() {
+      const now = Date.now();
+      const date = new Date();
+      const ua = navigator.userAgent.toLowerCase();
+
+      let platform = "Unknown";
+      if (ua.includes("windows")) platform = "Windows";
+      else if (ua.includes("android")) platform = "Android";
+      else if (/iphone|ipad|ipod/.test(ua)) platform = "iOS";
+
+      const battery = await getBatteryLevel();
+
+      return {
+        battery,
+        seconds: date.getSeconds(),
+        minute: date.getMinutes(),
+        hour: date.getHours(),
+        weekday: date.getDay(),
+        brightness: "max", // 시뮬레이션
+        pullCount,
+        referrer: document.referrer.toLowerCase(),
+        bluetoothConnected: false, // 시뮬레이션
+        platform,
+        weather: "clear", // 시뮬레이션
+        screenTime: now - screenStartTime,
+        timeSinceLastDraw: now - lastDrawTime
+      };
+    }
+
+    // 접두사 생성 함수
+    function generatePrefix(ctx) {
+      let prefix = "";
+      for (const cond of prefixConditions) {
+        if (cond.condition(ctx) && Math.random() < 0.01) {
+          prefix += cond.prefix;
+        }
+      }
+      return prefix;
+    }
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      userStatus.textContent = `로그인 중: ${user.displayName || user.email}`;
+      loginBtn.style.display = "none";
+      logoutBtn.style.display = "inline-block";
+      drawBtn.disabled = false;
+      inventorySection.style.display = "block";
+      renderInventory();
+      startCooldownTimer();
+    } else {
+      userStatus.textContent = "로그인 해주세요.";
+      loginBtn.style.display = "inline-block";
+      logoutBtn.style.display = "none";
+      drawBtn.disabled = true;
+      inventorySection.style.display = "none";
+      cooldownTimer.textContent = "";
+    }
+  });
+
+    // 로그인 버튼 클릭
+    loginBtn.onclick = () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(e => {
+        alert("로그인 실패: " + e.message);
+      });
+    };
+
+    // 로그아웃 버튼 클릭
+    logoutBtn.onclick = () => {
+      auth.signOut();
+    };
+
+    // 뽑기 버튼 이벤트
+    document.getElementById("drawBtn").addEventListener("click", async () => {
+      const ctx = await getContext();
+
+      pullCount++;
+      ctx.pullCount = pullCount;
+
+      localStorage.setItem("pullCount", pullCount);
+
+      const item = getRandomItem();
+      const prefix = generatePrefix(ctx);
+      const fullName = prefix + item.name;
+
+      document.getElementById("result").textContent = `뽑은 아이템: ${fullName} [${item.rarity}]`;
+
+      // Firebase 기록 저장
+      try {
+        await db.collection("pulls").add({
+          item: fullName,
+          rarity: item.rarity,
+          context: ctx,
+          timestamp: new Date()
+        });
+      } catch (e) {
+        console.error("Firebase 저장 실패:", e);
+      }
+
+      // 마지막 뽑기 시간 갱신
+      lastDrawTime = Date.now();
+      localStorage.setItem("lastDrawTime", lastDrawTime);
+    });
+      function renderInventory() {
+    inventoryList.innerHTML = "";
+    if (inventory.length === 0) {
+      inventoryList.innerHTML = "<li>인벤토리가 비어있습니다.</li>";
+    } else {
+      inventory.forEach((item, idx) => {
+        const li = document.createElement("li");
+        li.textContent = `${item.name} [${item.rarity}]${item.prefix ? ' (' + item.prefix + ')' : ''}`;
+
+        // 팔기 버튼
+        const sellBtn = document.createElement("button");
+        sellBtn.textContent = "판매";
+        sellBtn.onclick = () => sellItem(idx);
+        li.appendChild(sellBtn);
+
+        inventoryList.appendChild(li);
+      });
+    }
+    totalMoneyElem.textContent = `보유 금액: ${totalMoney} 골드`;
+  }
+
+    // 쿨다운 및 뽑기 버튼 관리
+  function startCooldownTimer() {
+    const COOLDOWN_MS = 10000; // 10초
+    let intervalId = null;
+
+    function update() {
+      const now = Date.now();
+      const diff = COOLDOWN_MS - (now - lastDrawTime);
+
+      if (diff > 0) {
+        drawBtn.disabled = true;
+        cooldownTimer.textContent = `뽑기 쿨다운: ${(diff / 1000).toFixed(1)}초 남음`;
+      } else {
+        drawBtn.disabled = false;
+        cooldownTimer.textContent = "";
+      }
+    }
+
+    update();
+    intervalId = setInterval(update, 100);
+
+    return () => clearInterval(intervalId);
+  }
+
+  // 초기 쿨다운 타이머 시작
+  let stopCooldown = startCooldownTimer();
+
+  // 뽑기 버튼 이벤트
+  drawBtn.addEventListener("click", async () => {
+    if (drawBtn.disabled) return;
+
+    const ctx = await getContext();
+    pullCount++;
+    lastDrawTime = Date.now();
+    localStorage.setItem("pullCount", pullCount);
+    localStorage.setItem("lastDrawTime", lastDrawTime);
+
+    const item = getRandomItem();
+    const prefix = generatePrefix(ctx);
+    const fullName = prefix + item.name;
+
+    // 인벤토리에 저장
+    const inventoryItem = { ...item, prefix };
+    inventory.push(inventoryItem);
+    localStorage.setItem("inventory", JSON.stringify(inventory));
+
+    document.getElementById("result").textContent = `뽑은 아이템: ${fullName} [${item.rarity}]`;
+
+    renderInventory();
+
+    // Firebase 기록 저장 (로그인 시만)
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        await db.collection("pulls").add({
+          userId: user.uid,
+          userName: user.displayName,
+          item: fullName,
+          rarity: item.rarity,
+          context: ctx,
+          timestamp: new Date()
+        });
+      } catch (e) {
+        console.error("Firebase 저장 실패:", e);
+      }
+    }
+
+    // 쿨다운 다시 시작
+    stopCooldown();
+    stopCooldown = startCooldownTimer();
+  });
+
+  </script>
+
+</body>
+</html>
