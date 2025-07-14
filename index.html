@@ -549,33 +549,7 @@ auth.onAuthStateChanged(user => {
       totalMoneyElem.textContent = `보유 금액: ${totalMoney} 골드`;
     }
 
-    loginBtn.onclick = () => {
-  const provider = new firebase.auth.GoogleAuthProvider();
-
-  // 모바일 감지
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  if (isMobile) {
-    // 리다이렉트 로그인
-    auth.signInWithRedirect(provider);
-  } else {
-    // 팝업 로그인
-    auth.signInWithPopup(provider).catch(e => {
-      alert("로그인 실패: " + e.message);
-    });
-  }
-};
-
-// 페이지 로드시 리다이렉트 로그인 결과 처리
-auth.getRedirectResult()
-  .then(result => {
-    if (result.user) {
-      console.log("리다이렉트 로그인 성공", result.user);
-      // 추가 처리: 로그인 UI 변경 등
-    }
-  })
-  .catch(error => {
-    console.error("리다이렉트 로그인 실패", error);
-  });
+    
 
     // 아이템 판매 함수
     function sellItem(idx) {
