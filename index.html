@@ -141,13 +141,7 @@
   <button id="drawBtn" disabled>뽑기하기</button>
   <div id="result">아이템을 뽑아보세요!</div>
 
-  <section id="moneyTradeSection" style="margin-top: 20px; max-width: 600px; color: #eef;">
-  <h3>돈 보내기</h3>
-  <input type="text" id="tradeMoneyUid" placeholder="받는 사람 UID" style="width: 40%; padding: 6px; font-size:1rem;" />
-  <input type="number" id="tradeMoneyAmount" placeholder="보낼 금액" style="width: 40%; padding: 6px; font-size:1rem;" min="1" />
-  <button id="sendMoneyBtn" style="padding: 8px 15px; font-size: 1rem; margin-left: 10px;">돈 보내기</button>
-</section>
-
+  
 
   <section id="inventory" style="display:none;">
     <h2>인벤토리</h2>
@@ -363,29 +357,29 @@ const items = [
       { prefix: "분 50분의 ", condition: ctx => ctx.minute === 50 },
 
       // 시 단위
-      { prefix: "시 0시의 ", condition: ctx => ctx.hour === 0 },
-      { prefix: "시 1시의 ", condition: ctx => ctx.hour === 1 },
-      { prefix: "시 2시의 ", condition: ctx => ctx.hour === 2 },
-      { prefix: "시 3시의 ", condition: ctx => ctx.hour === 3 },
-      { prefix: "시 5시의 ", condition: ctx => ctx.hour === 5 },
-      { prefix: "시 6시의 ", condition: ctx => ctx.hour === 6 },
-      { prefix: "시 7시의 ", condition: ctx => ctx.hour === 7 },
-      { prefix: "시 8시의 ", condition: ctx => ctx.hour === 8 },
-      { prefix: "시 9시의 ", condition: ctx => ctx.hour === 9 },
-      { prefix: "시 10시의 ", condition: ctx => ctx.hour === 10 },
-      { prefix: "시 11시의 ", condition: ctx => ctx.hour === 11 },
-      { prefix: "시 12시의 ", condition: ctx => ctx.hour === 12 },
-      { prefix: "시 13시의 ", condition: ctx => ctx.hour === 13 },
-      { prefix: "시 14시의 ", condition: ctx => ctx.hour === 14 },
-      { prefix: "시 15시의 ", condition: ctx => ctx.hour === 15 },
-      { prefix: "시 16시의 ", condition: ctx => ctx.hour === 16 },
-      { prefix: "시 17시의 ", condition: ctx => ctx.hour === 17 },
-      { prefix: "시 18시의 ", condition: ctx => ctx.hour === 18 },
-      { prefix: "시 19시의 ", condition: ctx => ctx.hour === 19 },
-      { prefix: "시 20시의 ", condition: ctx => ctx.hour === 20 },
-      { prefix: "시 21시의 ", condition: ctx => ctx.hour === 21 },
-      { prefix: "시 22시의 ", condition: ctx => ctx.hour === 22 },
-      { prefix: "시 23시의 ", condition: ctx => ctx.hour === 23 },
+      { prefix: "0시의 ", condition: ctx => ctx.hour === 0 },
+      { prefix: "1시의 ", condition: ctx => ctx.hour === 1 },
+      { prefix: "2시의 ", condition: ctx => ctx.hour === 2 },
+      { prefix: "3시의 ", condition: ctx => ctx.hour === 3 },
+      { prefix: "5시의 ", condition: ctx => ctx.hour === 5 },
+      { prefix: "6시의 ", condition: ctx => ctx.hour === 6 },
+      { prefix: "7시의 ", condition: ctx => ctx.hour === 7 },
+      { prefix: "8시의 ", condition: ctx => ctx.hour === 8 },
+      { prefix: "9시의 ", condition: ctx => ctx.hour === 9 },
+      { prefix: "10시의 ", condition: ctx => ctx.hour === 10 },
+      { prefix: "11시의 ", condition: ctx => ctx.hour === 11 },
+      { prefix: "12시의 ", condition: ctx => ctx.hour === 12 },
+      { prefix: "13시의 ", condition: ctx => ctx.hour === 13 },
+      { prefix: "14시의 ", condition: ctx => ctx.hour === 14 },
+      { prefix: "15시의 ", condition: ctx => ctx.hour === 15 },
+      { prefix: "16시의 ", condition: ctx => ctx.hour === 16 },
+      { prefix: "17시의 ", condition: ctx => ctx.hour === 17 },
+      { prefix: "18시의 ", condition: ctx => ctx.hour === 18 },
+      { prefix: "19시의 ", condition: ctx => ctx.hour === 19 },
+      { prefix: "20시의 ", condition: ctx => ctx.hour === 20 },
+      { prefix: "21시의 ", condition: ctx => ctx.hour === 21 },
+      { prefix: "22시의 ", condition: ctx => ctx.hour === 22 },
+      { prefix: "23시의 ", condition: ctx => ctx.hour === 23 },
 
       // 요일
       { prefix: "일요일의 ", condition: ctx => ctx.weekday === 0 },
@@ -397,8 +391,8 @@ const items = [
       { prefix: "토요일의 ", condition: ctx => ctx.weekday === 6 },
 
       // 뽑기 횟수
-      { prefix: "100+ 뽑기의 ", condition: ctx => ctx.pullCount >= 100 },
-      { prefix: "200+ 뽑기의 ", condition: ctx => ctx.pullCount >= 200 },
+  
+      { prefix: "1000+ 뽑기의 ", condition: ctx => ctx.pullCount >= 1000 },
 
       // 유입 경로
       { prefix: "구글러의 ", condition: ctx => ctx.referrer.includes("google") },
@@ -425,129 +419,6 @@ const items = [
       { prefix: "그냥 운인 ", condition: ctx => ctx.brightness === "max" },
       { prefix: "그냥 운인 ", condition: ctx => ctx.brightness === "min" },
 ];
-
-
-
-
-
-<!-- inventoryList 아래에 위치 -->
-
-  // 거래 요청 보내기 함수
-  async function sendTradeRequest(itemIndex) {
-    const user = auth.currentUser;
-    if (!user) {
-      alert("로그인 후 이용하세요.");
-      return;
-    }
-    const targetUid = prompt("거래할 상대방의 UID를 입력하세요:");
-    if (!targetUid) {
-      alert("UID를 입력하지 않았습니다.");
-      return;
-    }
-    if (targetUid === user.uid) {
-      alert("자기 자신에게는 거래할 수 없습니다.");
-      return;
-    }
-    const item = inventory[itemIndex];
-    if (!item) {
-      alert("존재하지 않는 아이템입니다.");
-      return;
-    }
-
-    try {
-      await db.collection("tradeRequests").add({
-        fromUid: user.uid,
-        toUid: targetUid,
-        item: item,
-        status: "pending",
-        timestamp: new Date()
-      });
-      alert("거래 요청을 보냈습니다.");
-    } catch (e) {
-      console.error("거래 요청 실패:", e);
-      alert("거래 요청 실패: " + e.message);
-    }
-  }
-
-  // 기존 renderInventory 함수 내 버튼 추가부분 예시 수정
-  function renderInventory() {
-    inventoryList.innerHTML = "";
-    if (inventory.length === 0) {
-      inventoryList.innerHTML = "<li>인벤토리가 비어있습니다.</li>";
-    } else {
-      inventory.forEach((item, idx) => {
-        const li = document.createElement("li");
-        li.textContent = `${item.name} [${item.rarity}]${item.prefix ? ' (' + item.prefix + ')' : ''}`;
-
-        // 팔기 버튼
-        const sellBtn = document.createElement("button");
-        sellBtn.textContent = "판매";
-        sellBtn.onclick = () => sellItem(idx);
-        li.appendChild(sellBtn);
-
-        // 거래 요청 보내기 버튼
-        const tradeBtn = document.createElement("button");
-        tradeBtn.textContent = "거래 요청 보내기";
-        tradeBtn.style.marginLeft = "10px";
-        tradeBtn.onclick = () => sendTradeRequest(idx);
-        li.appendChild(tradeBtn);
-
-        inventoryList.appendChild(li);
-      });
-    }
-    totalMoneyElem.textContent = `보유 금액: ${totalMoney} 골드`;
-  }
-
-  document.getElementById("sendMoneyBtn").onclick = async () => {
-  const user = auth.currentUser;
-  if (!user) {
-    alert("로그인 후 이용하세요.");
-    return;
-  }
-  const toUid = document.getElementById("tradeMoneyUid").value.trim();
-  if (!toUid) {
-    alert("받는 사람 UID를 입력하세요.");
-    return;
-  }
-  if (toUid === user.uid) {
-    alert("자기 자신에게 돈을 보낼 수 없습니다.");
-    return;
-  }
-  let amount = parseInt(document.getElementById("tradeMoneyAmount").value, 10);
-  if (isNaN(amount) || amount <= 0) {
-    alert("유효한 금액을 입력하세요.");
-    return;
-  }
-  if (amount > totalMoney) {
-    alert("보유 금액이 부족합니다.");
-    return;
-  }
-
-  // 거래 요청 생성
-  try {
-    await db.collection("tradeRequests").add({
-      fromUid: user.uid,
-      toUid: toUid,
-      type: "money",
-      amount: amount,
-      status: "pending",
-      timestamp: new Date()
-    });
-
-    // 보낸 금액 즉시 차감 후 저장
-    totalMoney -= amount;
-    localStorage.setItem("totalMoney", totalMoney);
-    totalMoneyElem.textContent = `보유 금액: ${totalMoney} 골드`;
-
-    alert(`성공적으로 ${amount} 골드를 보냈습니다.`);
-    // 입력창 초기화
-    document.getElementById("tradeMoneyUid").value = "";
-    document.getElementById("tradeMoneyAmount").value = "";
-  } catch (e) {
-    console.error("돈 거래 요청 실패:", e);
-    alert("돈 거래 요청 실패: " + e.message);
-  }
-};
 
 
 
@@ -620,24 +491,27 @@ const items = [
       return prefix;
     }
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        userStatus.textContent = `로그인 중: ${user.displayName || user.email}`;
-        loginBtn.style.display = "none";
-        logoutBtn.style.display = "inline-block";
-        drawBtn.disabled = false;
-        inventorySection.style.display = "block";
-        renderInventory();
-        startCooldownTimer();
-      } else {
-        userStatus.textContent = "로그인 해주세요.";
-        loginBtn.style.display = "inline-block";
-        logoutBtn.style.display = "none";
-        drawBtn.disabled = true;
-        inventorySection.style.display = "none";
-        cooldownTimer && (cooldownTimer.textContent = "");
-      }
-    });
+auth.onAuthStateChanged(user => {
+  if (user) {
+    userStatus.textContent = `로그인 중: ${user.displayName || user.email}`;
+    loginBtn.style.display = "none";
+    logoutBtn.style.display = "inline-block";
+    drawBtn.disabled = false;
+    inventorySection.style.display = "block";
+    renderInventory();
+    startCooldownTimer();
+  } else {
+  userStatus.textContent = "로그인 해주세요.";
+  loginBtn.style.display = "inline-block";
+  logoutBtn.style.display = "none";
+  drawBtn.disabled = true;
+  inventorySection.style.display = "none";
+
+  const timerElem = document.getElementById("cooldownTimer");
+  if (timerElem) timerElem.textContent = "";
+}
+});
+
 
     // 로그인 버튼 클릭
     loginBtn.onclick = () => {
