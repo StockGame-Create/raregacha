@@ -38,6 +38,7 @@
       cursor: pointer;
       box-shadow: 0 5px 15px rgba(0,0,0,0.3);
       transition: background 0.3s ease, transform 0.15s ease;
+      margin: 5px;
     }
     button:hover {
       background: linear-gradient(to right, #6af2bc, #2a7dc5);
@@ -60,11 +61,67 @@
       min-height: 3em;
       line-height: 1.4em;
     }
-        #userStatus {
+    #userStatus {
       margin-bottom: 15px;
       font-size: 1.3rem;
       min-height: 1.5em;
       color: #aaf;
+    }
+    #inventory {
+      margin-top: 40px;
+      max-width: 600px;
+      width: 100%;
+      background: rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+      color: #eef;
+    }
+    #inventory h2 {
+      margin-top: 0;
+      text-align: center;
+      text-shadow: 1px 1px 3px #0008;
+    }
+    #inventoryList {
+      list-style: none;
+      padding: 0;
+      margin: 10px 0 20px 0;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #444;
+      border-radius: 8px;
+      background: #222244cc;
+    }
+    #inventoryList li {
+      padding: 8px 12px;
+      border-bottom: 1px solid #444;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.1rem;
+      user-select: text;
+    }
+    #inventoryList li:last-child {
+      border-bottom: none;
+    }
+    #inventoryList button {
+      background: #d64545;
+      padding: 6px 14px;
+      font-size: 1rem;
+      border-radius: 8px;
+      box-shadow: none;
+      transition: background 0.3s ease;
+      cursor: pointer;
+    }
+    #inventoryList button:hover {
+      background: #ff4f4f;
+    }
+    #totalMoney {
+      font-weight: bold;
+      font-size: 1.3rem;
+      text-align: center;
+      margin-top: 10px;
+      text-shadow: 1px 1px 2px #0008;
     }
   </style>
 
@@ -76,18 +133,26 @@
 <body>
 
   <h1>희귀 아이템 뽑기</h1>
-    <div id="userStatus">로그인 상태를 확인 중입니다...</div>
+  <div id="userStatus">로그인 상태를 확인 중입니다...</div>
   <div>
     <button id="loginBtn">Google 로그인</button>
     <button id="logoutBtn" style="display:none;">로그아웃</button>
   </div>
-  <button id="drawBtn">뽑기하기</button>
+  <button id="drawBtn" disabled>뽑기하기</button>
   <div id="result">아이템을 뽑아보세요!</div>
 
-    <section id="inventory" style="display:none;">
+  <section id="moneyTradeSection" style="margin-top: 20px; max-width: 600px; color: #eef;">
+  <h3>돈 보내기</h3>
+  <input type="text" id="tradeMoneyUid" placeholder="받는 사람 UID" style="width: 40%; padding: 6px; font-size:1rem;" />
+  <input type="number" id="tradeMoneyAmount" placeholder="보낼 금액" style="width: 40%; padding: 6px; font-size:1rem;" min="1" />
+  <button id="sendMoneyBtn" style="padding: 8px 15px; font-size: 1rem; margin-left: 10px;">돈 보내기</button>
+</section>
+
+
+  <section id="inventory" style="display:none;">
     <h2>인벤토리</h2>
     <ul id="inventoryList"></ul>
-    <div id="totalMoney">보유 금액: 0</div>
+    <div id="totalMoney">보유 금액: 0 골드</div>
   </section>
 
   <script>
@@ -105,39 +170,162 @@
     const db = firebase.firestore();
     const auth = firebase.auth();
 
-  // DOM 요소
-  const loginBtn = document.getElementById("loginBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
-  const userStatus = document.getElementById("userStatus");
-  const drawBtn = document.getElementById("drawBtn");
-  const cooldownTimer = document.getElementById("cooldownTimer");
-  const inventorySection = document.getElementById("inventory");
-  const inventoryList = document.getElementById("inventoryList");
-  const totalMoneyElem = document.getElementById("totalMoney");
-    // 아이템 & 희귀도
-    const items = [
-      { name: "돌검", rarity: "C" },
-      { name: "철검", rarity: "C" },
-      { name: "은검", rarity: "B" },
-      { name: "불꽃검", rarity: "B" },
-      { name: "용의검", rarity: "A" },
-      { name: "천사의 검", rarity: "S" },
-      { name: "전설의 검", rarity: "UR" },
-    ];
+    // DOM 요소
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const userStatus = document.getElementById("userStatus");
+    const drawBtn = document.getElementById("drawBtn");
+    const inventorySection = document.getElementById("inventory");
+    const inventoryList = document.getElementById("inventoryList");
+    const totalMoneyElem = document.getElementById("totalMoney");
+
+const items = [
+  // C 등급 (48개)
+  { name: "연필", rarity: "C" },
+  { name: "볼펜", rarity: "C" },
+  { name: "지우개", rarity: "C" },
+  { name: "샤프", rarity: "C" },
+  { name: "A4용지", rarity: "C" },
+  { name: "포스트잇", rarity: "C" },
+  { name: "노트", rarity: "C" },
+  { name: "일회용 컵", rarity: "C" },
+  { name: "빨대", rarity: "C" },
+  { name: "일회용 숟가락", rarity: "C" },
+  { name: "종이접시", rarity: "C" },
+  { name: "비닐봉지", rarity: "C" },
+  { name: "휴지", rarity: "C" },
+  { name: "마스크", rarity: "C" },
+  { name: "커터칼", rarity: "C" },
+  { name: "분필", rarity: "C" },
+  { name: "연습장", rarity: "C" },
+  { name: "자", rarity: "C" },
+  { name: "테이프", rarity: "C" },
+  { name: "물티슈", rarity: "C" },
+  { name: "건전지", rarity: "C" },
+  { name: "손톱깎이", rarity: "C" },
+  { name: "열쇠고리", rarity: "C" },
+  { name: "메모장", rarity: "C" },
+  { name: "도장", rarity: "C" },
+  { name: "스티커", rarity: "C" },
+  { name: "클립", rarity: "C" },
+  { name: "파일", rarity: "C" },
+  { name: "책갈피", rarity: "C" },
+  { name: "머리끈", rarity: "C" },
+  { name: "손수건", rarity: "C" },
+  { name: "양말", rarity: "C" },
+  { name: "티셔츠", rarity: "C" },
+  { name: "우산 케이스", rarity: "C" },
+  { name: "자전거 벨", rarity: "C" },
+  { name: "휴대폰 거치대", rarity: "C" },
+  { name: "충전 케이블", rarity: "C" },
+  { name: "USB", rarity: "C" },
+  { name: "에어컨 리모컨", rarity: "C" },
+  { name: "셀프 타이머", rarity: "C" },
+  { name: "냉장고 자석", rarity: "C" },
+  { name: "스펀지", rarity: "C" },
+  { name: "수세미", rarity: "C" },
+  { name: "옷걸이", rarity: "C" },
+  { name: "식탁보", rarity: "C" },
+  { name: "화분 받침", rarity: "C" },
+  { name: "조화", rarity: "C" },
+  { name: "소형 쓰레기통", rarity: "C" },
+
+  // B 등급 (36개)
+  { name: "머그컵", rarity: "B" },
+  { name: "텀블러", rarity: "B" },
+  { name: "우산", rarity: "B" },
+  { name: "다이어리", rarity: "B" },
+  { name: "고급 볼펜", rarity: "B" },
+  { name: "휴대용 거울", rarity: "B" },
+  { name: "손목시계", rarity: "B" },
+  { name: "헤드셋", rarity: "B" },
+  { name: "보조배터리", rarity: "B" },
+  { name: "고속 충전기", rarity: "B" },
+  { name: "스마트폰 케이스", rarity: "B" },
+  { name: "램프", rarity: "B" },
+  { name: "알람시계", rarity: "B" },
+  { name: "캠핑의자", rarity: "B" },
+  { name: "미니 가습기", rarity: "B" },
+  { name: "무선 마우스", rarity: "B" },
+  { name: "키보드", rarity: "B" },
+  { name: "책상 스탠드", rarity: "B" },
+  { name: "멀티탭", rarity: "B" },
+  { name: "휴대용 손난로", rarity: "B" },
+  { name: "미니 선풍기", rarity: "B" },
+  { name: "코드 정리기", rarity: "B" },
+  { name: "거치대 스탠드", rarity: "B" },
+  { name: "휴대용 세면도구 키트", rarity: "B" },
+  { name: "천연 비누", rarity: "B" },
+  { name: "소형 스피커", rarity: "B" },
+  { name: "아이패드 펜슬", rarity: "B" },
+  { name: "와이파이 공유기", rarity: "B" },
+  { name: "블루라이트 차단 안경", rarity: "B" },
+  { name: "독서대", rarity: "B" },
+  { name: "모니터 받침대", rarity: "B" },
+  { name: "전자시계", rarity: "B" },
+  { name: "유선 이어폰", rarity: "B" },
+  { name: "조명 거울", rarity: "B" },
+  { name: "핀 마이크", rarity: "B" },
+  { name: "라벨 프린터", rarity: "B" },
+
+  // A 등급 (18개)
+  { name: "무선 이어폰", rarity: "A" },
+  { name: "포터블 스피커", rarity: "A" },
+  { name: "스탠딩 데스크", rarity: "A" },
+  { name: "블루투스 키보드", rarity: "A" },
+  { name: "슬림 랩탑 거치대", rarity: "A" },
+  { name: "스마트 체중계", rarity: "A" },
+  { name: "무드등", rarity: "A" },
+  { name: "미니 공기청정기", rarity: "A" },
+  { name: "무선 프린터", rarity: "A" },
+  { name: "태블릿 거치대", rarity: "A" },
+  { name: "전자 메모패드", rarity: "A" },
+  { name: "미니빔 프로젝터", rarity: "A" },
+  { name: "휴대용 보풀제거기", rarity: "A" },
+  { name: "멀티 충전 독", rarity: "A" },
+  { name: "디지털 액자", rarity: "A" },
+  { name: "LED 알람시계", rarity: "A" },
+  { name: "아이폰 라이트닝 오디오잭", rarity: "A" },
+  { name: "자동 센서 휴지통", rarity: "A" },
+
+  // S 등급 (12개)
+  { name: "스마트워치", rarity: "S" },
+  { name: "태블릿", rarity: "S" },
+  { name: "드론", rarity: "S" },
+  { name: "고급 커피머신", rarity: "S" },
+  { name: "무선 고급 청소기", rarity: "S" },
+  { name: "하이엔드 헤드폰", rarity: "S" },
+  { name: "휴대용 프로젝터", rarity: "S" },
+  { name: "스마트 미러", rarity: "S" },
+  { name: "미러리스 카메라", rarity: "S" },
+  { name: "워터필터 정수기", rarity: "S" },
+  { name: "AI 음성 스피커", rarity: "S" },
+  { name: "프리미엄 모니터", rarity: "S" },
+
+  // UR 등급 (6개)
+  { name: "블루투스 샤워기", rarity: "UR" },
+  { name: "바보상자", rarity: "UR" },
+  { name: "딥러닝 AI 쳇봇", rarity: "UR" },
+  { name: "프리미엄 초콜릿 메이커", rarity: "UR" },
+  { name: "철제련용 용접기계", rarity: "UR" },
+  { name: "간이 엘리베이터", rarity: "UR" },
+];
+
+  // UR 등
     const rarityRates = {
       C: 0.4, B: 0.3, A: 0.15, S: 0.1, UR: 0.05
     };
-
-      const rarityPrices = {
-    C: 5, B: 10, A: 15, S: 20, UR: 25
-  };
+    const rarityPrices = {
+      C: 5, B: 10, A: 15, S: 20, UR: 25
+    };
 
     // 전역 변수 (로컬스토리지 불러오기)
-  let pullCount = parseInt(localStorage.getItem("pullCount") || "0");
-  let lastDrawTime = parseInt(localStorage.getItem("lastDrawTime") || "0");
-  if (!lastDrawTime) lastDrawTime = 0;
-  let totalMoney = parseInt(localStorage.getItem("totalMoney") || "0");
-  let inventory = JSON.parse(localStorage.getItem("inventory") || "[]");
+    let pullCount = parseInt(localStorage.getItem("pullCount") || "0");
+    let lastDrawTime = parseInt(localStorage.getItem("lastDrawTime") || "0");
+    if (!lastDrawTime) lastDrawTime = 0;
+    let totalMoney = parseInt(localStorage.getItem("totalMoney") || "0");
+    let inventory = JSON.parse(localStorage.getItem("inventory") || "[]");
+    let screenStartTime = Date.now();
 
     // 접두사 조건
     const prefixConditions = [
@@ -157,43 +345,47 @@
       { prefix: "초 15초의 ", condition: ctx => ctx.seconds === 15 },
       { prefix: "초 20초의 ", condition: ctx => ctx.seconds === 20 },
       { prefix: "초 25초의 ", condition: ctx => ctx.seconds === 25 },
+      { prefix: "초 30초의 ", condition: ctx => ctx.seconds === 30 },
+      { prefix: "초 35초의 ", condition: ctx => ctx.seconds === 35 },
+      { prefix: "초 40초의 ", condition: ctx => ctx.seconds === 40 },
+      { prefix: "초 45초의 ", condition: ctx => ctx.seconds === 45 },
+      { prefix: "초 50초의 ", condition: ctx => ctx.seconds === 50 },
+      { prefix: "초 55초의 ", condition: ctx => ctx.seconds === 55 },
+
 
       // 분 단위
       { prefix: "분 10분의 ", condition: ctx => ctx.minute === 10 },
-            { prefix: "분 15분의 ", condition: ctx => ctx.minute === 15 },
-                  { prefix: "분 20분의 ", condition: ctx => ctx.minute === 20 },
-                        { prefix: "분 35분의 ", condition: ctx => ctx.minute === 35 },
-
+      { prefix: "분 15분의 ", condition: ctx => ctx.minute === 15 },
+      { prefix: "분 20분의 ", condition: ctx => ctx.minute === 20 },
       { prefix: "분 30분의 ", condition: ctx => ctx.minute === 30 },
+      { prefix: "분 35분의 ", condition: ctx => ctx.minute === 35 },
       { prefix: "분 45분의 ", condition: ctx => ctx.minute === 45 },
-            { prefix: "분 50분의 ", condition: ctx => ctx.minute === 50 },
+      { prefix: "분 50분의 ", condition: ctx => ctx.minute === 50 },
 
       // 시 단위
       { prefix: "시 0시의 ", condition: ctx => ctx.hour === 0 },
-            { prefix: "시 1시의 ", condition: ctx => ctx.hour === 1 },
-                  { prefix: "시 2시의 ", condition: ctx => ctx.hour === 2 },
-                        { prefix: "시 3시의 ", condition: ctx => ctx.hour === 3 },
-                              { prefix: "시 5시의 ", condition: ctx => ctx.hour === 5 },
-                                    { prefix: "시 7시의 ", condition: ctx => ctx.hour === 7 },
+      { prefix: "시 1시의 ", condition: ctx => ctx.hour === 1 },
+      { prefix: "시 2시의 ", condition: ctx => ctx.hour === 2 },
+      { prefix: "시 3시의 ", condition: ctx => ctx.hour === 3 },
+      { prefix: "시 5시의 ", condition: ctx => ctx.hour === 5 },
       { prefix: "시 6시의 ", condition: ctx => ctx.hour === 6 },
-            { prefix: "시 8시의 ", condition: ctx => ctx.hour === 8 },
-                  { prefix: "시 9시의 ", condition: ctx => ctx.hour === 9 },
-                        { prefix: "시 10시의 ", condition: ctx => ctx.hour === 10 },
-                              { prefix: "시 11시의 ", condition: ctx => ctx.hour === 11 },
-                                    { prefix: "시 12시의 ", condition: ctx => ctx.hour === 12 },
-                                    
-
+      { prefix: "시 7시의 ", condition: ctx => ctx.hour === 7 },
+      { prefix: "시 8시의 ", condition: ctx => ctx.hour === 8 },
+      { prefix: "시 9시의 ", condition: ctx => ctx.hour === 9 },
+      { prefix: "시 10시의 ", condition: ctx => ctx.hour === 10 },
+      { prefix: "시 11시의 ", condition: ctx => ctx.hour === 11 },
+      { prefix: "시 12시의 ", condition: ctx => ctx.hour === 12 },
       { prefix: "시 13시의 ", condition: ctx => ctx.hour === 13 },
-       { prefix: "시 14시의 ", condition: ctx => ctx.hour === 14 },
-        { prefix: "시 15시의 ", condition: ctx => ctx.hour === 15 },
-         { prefix: "시 16시의 ", condition: ctx => ctx.hour === 16 },
-          { prefix: "시 17시의 ", condition: ctx => ctx.hour === 17 },
+      { prefix: "시 14시의 ", condition: ctx => ctx.hour === 14 },
+      { prefix: "시 15시의 ", condition: ctx => ctx.hour === 15 },
+      { prefix: "시 16시의 ", condition: ctx => ctx.hour === 16 },
+      { prefix: "시 17시의 ", condition: ctx => ctx.hour === 17 },
       { prefix: "시 18시의 ", condition: ctx => ctx.hour === 18 },
-       { prefix: "시 19시의 ", condition: ctx => ctx.hour === 19 },
-        { prefix: "시 20시의 ", condition: ctx => ctx.hour === 20 },
-         { prefix: "시 21시의 ", condition: ctx => ctx.hour === 21 },
-          { prefix: "시 22시의 ", condition: ctx => ctx.hour === 22 },
-           { prefix: "시 23시의 ", condition: ctx => ctx.hour === 23 },
+      { prefix: "시 19시의 ", condition: ctx => ctx.hour === 19 },
+      { prefix: "시 20시의 ", condition: ctx => ctx.hour === 20 },
+      { prefix: "시 21시의 ", condition: ctx => ctx.hour === 21 },
+      { prefix: "시 22시의 ", condition: ctx => ctx.hour === 22 },
+      { prefix: "시 23시의 ", condition: ctx => ctx.hour === 23 },
 
       // 요일
       { prefix: "일요일의 ", condition: ctx => ctx.weekday === 0 },
@@ -230,20 +422,137 @@
       { prefix: "iOS의 ", condition: ctx => ctx.platform === "iOS" },
 
       // 밝기 (시뮬레이션 고정값)
-      { prefix: "최대 밝기의 ", condition: ctx => ctx.brightness === "max" },
-      { prefix: "최저 밝기의 ", condition: ctx => ctx.brightness === "min" },
+      { prefix: "그냥 운인 ", condition: ctx => ctx.brightness === "max" },
+      { prefix: "그냥 운인 ", condition: ctx => ctx.brightness === "min" },
+];
 
-      // 블루투스 연결 (시뮬레이션)
-      { prefix: "블루투스 연결된 ", condition: ctx => ctx.bluetoothConnected === true },
 
-      // 날씨 (시뮬레이션)
-      { prefix: "맑음의 ", condition: ctx => ctx.weather === "clear" },
-      { prefix: "비오는 ", condition: ctx => ctx.weather === "rain" },
-      { prefix: "흐린 ", condition: ctx => ctx.weather === "cloudy" },
-      { prefix: "눈 오는 ", condition: ctx => ctx.weather === "snow" },
-    ];
+
+
+
+<!-- inventoryList 아래에 위치 -->
+
+  // 거래 요청 보내기 함수
+  async function sendTradeRequest(itemIndex) {
+    const user = auth.currentUser;
+    if (!user) {
+      alert("로그인 후 이용하세요.");
+      return;
+    }
+    const targetUid = prompt("거래할 상대방의 UID를 입력하세요:");
+    if (!targetUid) {
+      alert("UID를 입력하지 않았습니다.");
+      return;
+    }
+    if (targetUid === user.uid) {
+      alert("자기 자신에게는 거래할 수 없습니다.");
+      return;
+    }
+    const item = inventory[itemIndex];
+    if (!item) {
+      alert("존재하지 않는 아이템입니다.");
+      return;
+    }
+
+    try {
+      await db.collection("tradeRequests").add({
+        fromUid: user.uid,
+        toUid: targetUid,
+        item: item,
+        status: "pending",
+        timestamp: new Date()
+      });
+      alert("거래 요청을 보냈습니다.");
+    } catch (e) {
+      console.error("거래 요청 실패:", e);
+      alert("거래 요청 실패: " + e.message);
+    }
+  }
+
+  // 기존 renderInventory 함수 내 버튼 추가부분 예시 수정
+  function renderInventory() {
+    inventoryList.innerHTML = "";
+    if (inventory.length === 0) {
+      inventoryList.innerHTML = "<li>인벤토리가 비어있습니다.</li>";
+    } else {
+      inventory.forEach((item, idx) => {
+        const li = document.createElement("li");
+        li.textContent = `${item.name} [${item.rarity}]${item.prefix ? ' (' + item.prefix + ')' : ''}`;
+
+        // 팔기 버튼
+        const sellBtn = document.createElement("button");
+        sellBtn.textContent = "판매";
+        sellBtn.onclick = () => sellItem(idx);
+        li.appendChild(sellBtn);
+
+        // 거래 요청 보내기 버튼
+        const tradeBtn = document.createElement("button");
+        tradeBtn.textContent = "거래 요청 보내기";
+        tradeBtn.style.marginLeft = "10px";
+        tradeBtn.onclick = () => sendTradeRequest(idx);
+        li.appendChild(tradeBtn);
+
+        inventoryList.appendChild(li);
+      });
+    }
+    totalMoneyElem.textContent = `보유 금액: ${totalMoney} 골드`;
+  }
+
+  document.getElementById("sendMoneyBtn").onclick = async () => {
+  const user = auth.currentUser;
+  if (!user) {
+    alert("로그인 후 이용하세요.");
+    return;
+  }
+  const toUid = document.getElementById("tradeMoneyUid").value.trim();
+  if (!toUid) {
+    alert("받는 사람 UID를 입력하세요.");
+    return;
+  }
+  if (toUid === user.uid) {
+    alert("자기 자신에게 돈을 보낼 수 없습니다.");
+    return;
+  }
+  let amount = parseInt(document.getElementById("tradeMoneyAmount").value, 10);
+  if (isNaN(amount) || amount <= 0) {
+    alert("유효한 금액을 입력하세요.");
+    return;
+  }
+  if (amount > totalMoney) {
+    alert("보유 금액이 부족합니다.");
+    return;
+  }
+
+  // 거래 요청 생성
+  try {
+    await db.collection("tradeRequests").add({
+      fromUid: user.uid,
+      toUid: toUid,
+      type: "money",
+      amount: amount,
+      status: "pending",
+      timestamp: new Date()
+    });
+
+    // 보낸 금액 즉시 차감 후 저장
+    totalMoney -= amount;
+    localStorage.setItem("totalMoney", totalMoney);
+    totalMoneyElem.textContent = `보유 금액: ${totalMoney} 골드`;
+
+    alert(`성공적으로 ${amount} 골드를 보냈습니다.`);
+    // 입력창 초기화
+    document.getElementById("tradeMoneyUid").value = "";
+    document.getElementById("tradeMoneyAmount").value = "";
+  } catch (e) {
+    console.error("돈 거래 요청 실패:", e);
+    alert("돈 거래 요청 실패: " + e.message);
+  }
+};
+
+
 
     // 랜덤 아이템 뽑기 함수
+
     function getRandomItem() {
       const rand = Math.random();
       let cumulative = 0;
@@ -304,31 +613,31 @@
     function generatePrefix(ctx) {
       let prefix = "";
       for (const cond of prefixConditions) {
-        if (cond.condition(ctx) && Math.random() < 0.01) {
+        if (cond.condition(ctx) && Math.random() < 0.025) {
           prefix += cond.prefix;
         }
       }
       return prefix;
     }
 
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      userStatus.textContent = `로그인 중: ${user.displayName || user.email}`;
-      loginBtn.style.display = "none";
-      logoutBtn.style.display = "inline-block";
-      drawBtn.disabled = false;
-      inventorySection.style.display = "block";
-      renderInventory();
-      startCooldownTimer();
-    } else {
-      userStatus.textContent = "로그인 해주세요.";
-      loginBtn.style.display = "inline-block";
-      logoutBtn.style.display = "none";
-      drawBtn.disabled = true;
-      inventorySection.style.display = "none";
-      cooldownTimer.textContent = "";
-    }
-  });
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        userStatus.textContent = `로그인 중: ${user.displayName || user.email}`;
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-block";
+        drawBtn.disabled = false;
+        inventorySection.style.display = "block";
+        renderInventory();
+        startCooldownTimer();
+      } else {
+        userStatus.textContent = "로그인 해주세요.";
+        loginBtn.style.display = "inline-block";
+        logoutBtn.style.display = "none";
+        drawBtn.disabled = true;
+        inventorySection.style.display = "none";
+        cooldownTimer && (cooldownTimer.textContent = "");
+      }
+    });
 
     // 로그인 버튼 클릭
     loginBtn.onclick = () => {
@@ -343,130 +652,121 @@
       auth.signOut();
     };
 
+    // 인벤토리 렌더링
+    function renderInventory() {
+      inventoryList.innerHTML = "";
+      if (inventory.length === 0) {
+        inventoryList.innerHTML = "<li>인벤토리가 비어있습니다.</li>";
+      } else {
+        inventory.forEach((item, idx) => {
+          const li = document.createElement("li");
+          li.textContent = `${item.prefix || ''}${item.name} [${item.rarity}]`;
+
+          const sellBtn = document.createElement("button");
+          sellBtn.textContent = "판매";
+          sellBtn.onclick = () => sellItem(idx);
+          li.appendChild(sellBtn);
+
+          inventoryList.appendChild(li);
+        });
+      }
+      totalMoneyElem.textContent = `보유 금액: ${totalMoney} 골드`;
+    }
+
+    // 아이템 판매 함수
+    function sellItem(idx) {
+      const item = inventory[idx];
+      if (!item) return;
+      const price = rarityPrices[item.rarity] || 0;
+      totalMoney += price;
+      inventory.splice(idx, 1);
+      localStorage.setItem("inventory", JSON.stringify(inventory));
+      localStorage.setItem("totalMoney", totalMoney);
+      renderInventory();
+      alert(`${item.prefix || ''}${item.name}을(를) ${price} 골드에 판매했습니다.`);
+    }
+
+    // 쿨다운 및 뽑기 버튼 관리
+    function startCooldownTimer() {
+      const COOLDOWN_MS = 5000; // 10초
+      let intervalId = null;
+
+      function update() {
+        const now = Date.now();
+        const diff = COOLDOWN_MS - (now - lastDrawTime);
+
+        if (diff > 0) {
+          drawBtn.disabled = true;
+          if (!document.getElementById("cooldownTimer")) {
+            const timerElem = document.createElement("div");
+            timerElem.id = "cooldownTimer";
+            timerElem.style.color = "#aad";
+            timerElem.style.marginTop = "10px";
+            drawBtn.after(timerElem);
+          }
+          document.getElementById("cooldownTimer").textContent = `뽑기 쿨다운: ${(diff / 1000).toFixed(1)}초 남음`;
+        } else {
+          drawBtn.disabled = false;
+          const timerElem = document.getElementById("cooldownTimer");
+          if (timerElem) timerElem.textContent = "";
+        }
+      }
+
+      update();
+      intervalId = setInterval(update, 100);
+
+      return () => clearInterval(intervalId);
+    }
+
+    // 초기 쿨다운 타이머 시작
+    let stopCooldown = startCooldownTimer();
+
     // 뽑기 버튼 이벤트
-    document.getElementById("drawBtn").addEventListener("click", async () => {
+    drawBtn.addEventListener("click", async () => {
+      if (drawBtn.disabled) return;
+
       const ctx = await getContext();
 
       pullCount++;
-      ctx.pullCount = pullCount;
-
+      lastDrawTime = Date.now();
       localStorage.setItem("pullCount", pullCount);
+      localStorage.setItem("lastDrawTime", lastDrawTime);
 
       const item = getRandomItem();
       const prefix = generatePrefix(ctx);
       const fullName = prefix + item.name;
 
+      // 인벤토리에 저장
+      const inventoryItem = { ...item, prefix };
+      inventory.push(inventoryItem);
+      localStorage.setItem("inventory", JSON.stringify(inventory));
+
       document.getElementById("result").textContent = `뽑은 아이템: ${fullName} [${item.rarity}]`;
 
-      // Firebase 기록 저장
-      try {
-        await db.collection("pulls").add({
-          item: fullName,
-          rarity: item.rarity,
-          context: ctx,
-          timestamp: new Date()
-        });
-      } catch (e) {
-        console.error("Firebase 저장 실패:", e);
+      renderInventory();
+
+      // Firebase 기록 저장 (로그인 시만)
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          await db.collection("pulls").add({
+            userId: user.uid,
+            userName: user.displayName,
+            item: fullName,
+            rarity: item.rarity,
+            context: ctx,
+            timestamp: new Date()
+          });
+        } catch (e) {
+          console.error("Firebase 저장 실패:", e);
+        }
       }
 
-      // 마지막 뽑기 시간 갱신
-      lastDrawTime = Date.now();
-      localStorage.setItem("lastDrawTime", lastDrawTime);
+
+      // 쿨다운 다시 시작
+      stopCooldown();
+      stopCooldown = startCooldownTimer();
     });
-      function renderInventory() {
-    inventoryList.innerHTML = "";
-    if (inventory.length === 0) {
-      inventoryList.innerHTML = "<li>인벤토리가 비어있습니다.</li>";
-    } else {
-      inventory.forEach((item, idx) => {
-        const li = document.createElement("li");
-        li.textContent = `${item.name} [${item.rarity}]${item.prefix ? ' (' + item.prefix + ')' : ''}`;
-
-        // 팔기 버튼
-        const sellBtn = document.createElement("button");
-        sellBtn.textContent = "판매";
-        sellBtn.onclick = () => sellItem(idx);
-        li.appendChild(sellBtn);
-
-        inventoryList.appendChild(li);
-      });
-    }
-    totalMoneyElem.textContent = `보유 금액: ${totalMoney} 골드`;
-  }
-
-    // 쿨다운 및 뽑기 버튼 관리
-  function startCooldownTimer() {
-    const COOLDOWN_MS = 10000; // 10초
-    let intervalId = null;
-
-    function update() {
-      const now = Date.now();
-      const diff = COOLDOWN_MS - (now - lastDrawTime);
-
-      if (diff > 0) {
-        drawBtn.disabled = true;
-        cooldownTimer.textContent = `뽑기 쿨다운: ${(diff / 1000).toFixed(1)}초 남음`;
-      } else {
-        drawBtn.disabled = false;
-        cooldownTimer.textContent = "";
-      }
-    }
-
-    update();
-    intervalId = setInterval(update, 100);
-
-    return () => clearInterval(intervalId);
-  }
-
-  // 초기 쿨다운 타이머 시작
-  let stopCooldown = startCooldownTimer();
-
-  // 뽑기 버튼 이벤트
-  drawBtn.addEventListener("click", async () => {
-    if (drawBtn.disabled) return;
-
-    const ctx = await getContext();
-    pullCount++;
-    lastDrawTime = Date.now();
-    localStorage.setItem("pullCount", pullCount);
-    localStorage.setItem("lastDrawTime", lastDrawTime);
-
-    const item = getRandomItem();
-    const prefix = generatePrefix(ctx);
-    const fullName = prefix + item.name;
-
-    // 인벤토리에 저장
-    const inventoryItem = { ...item, prefix };
-    inventory.push(inventoryItem);
-    localStorage.setItem("inventory", JSON.stringify(inventory));
-
-    document.getElementById("result").textContent = `뽑은 아이템: ${fullName} [${item.rarity}]`;
-
-    renderInventory();
-
-    // Firebase 기록 저장 (로그인 시만)
-    const user = auth.currentUser;
-    if (user) {
-      try {
-        await db.collection("pulls").add({
-          userId: user.uid,
-          userName: user.displayName,
-          item: fullName,
-          rarity: item.rarity,
-          context: ctx,
-          timestamp: new Date()
-        });
-      } catch (e) {
-        console.error("Firebase 저장 실패:", e);
-      }
-    }
-
-    // 쿨다운 다시 시작
-    stopCooldown();
-    stopCooldown = startCooldownTimer();
-  });
-
   </script>
 
 </body>
