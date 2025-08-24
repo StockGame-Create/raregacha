@@ -48,6 +48,12 @@
       transform: scale(0.95);
     }
 
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     #result {
       margin-top: 30px;
       font-size: 1.5rem;
@@ -69,7 +75,7 @@
     }
     #inventory {
       margin-top: 40px;
-      max-width: 600px;
+      max-width: 800px;
       width: 100%;
       background: rgba(255,255,255,0.1);
       border-radius: 16px;
@@ -86,7 +92,7 @@
       list-style: none;
       padding: 0;
       margin: 10px 0 20px 0;
-      max-height: 200px;
+      max-height: 300px;
       overflow-y: auto;
       border: 1px solid #444;
       border-radius: 8px;
@@ -98,24 +104,57 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 1.1rem;
+      font-size: 1rem;
       user-select: text;
     }
     #inventoryList li:last-child {
       border-bottom: none;
     }
-    #inventoryList button {
+    #inventoryList li.selected {
+      background-color: rgba(67, 206, 162, 0.3);
+    }
+    
+    .item-info {
+      flex: 1;
+      margin-right: 10px;
+    }
+    
+    .item-buttons {
+      display: flex;
+      gap: 5px;
+    }
+    
+    .item-buttons button {
       background: #d64545;
       padding: 6px 14px;
-      font-size: 1rem;
+      font-size: 0.9rem;
       border-radius: 8px;
       box-shadow: none;
       transition: background 0.3s ease;
       cursor: pointer;
+      margin: 0;
     }
-    #inventoryList button:hover {
+    
+    .item-buttons button:hover {
       background: #ff4f4f;
     }
+    
+    .item-buttons .select-btn {
+      background: #43cea2;
+    }
+    
+    .item-buttons .select-btn:hover {
+      background: #6af2bc;
+    }
+    
+    .item-buttons .select-btn.selected {
+      background: #ff8800;
+    }
+    
+    .item-buttons .select-btn.selected:hover {
+      background: #ffaa00;
+    }
+
     #totalMoney {
       font-weight: bold;
       font-size: 1.3rem;
@@ -123,6 +162,43 @@
       margin-top: 10px;
       text-shadow: 1px 1px 2px #0008;
     }
+    
+    #combineSection {
+      margin-top: 20px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      border: 2px solid #43cea2;
+    }
+    
+    #combineSection h3 {
+      margin-top: 0;
+      color: #43cea2;
+      text-align: center;
+    }
+    
+    #selectedItems {
+      margin: 15px 0;
+      font-size: 1.1rem;
+      min-height: 40px;
+    }
+    
+    .combine-button {
+      background: linear-gradient(to right, #ff6b35, #f7931e) !important;
+      font-size: 1.2rem !important;
+      padding: 12px 30px !important;
+    }
+    
+    .combine-button:hover {
+      background: linear-gradient(to right, #ff8555, #ffaa3e) !important;
+    }
+    
+    .enhancement-great { color: #90EE90; }
+    .enhancement-super { color: #87CEEB; }
+    .enhancement-mega { color: #DDA0DD; }
+    .enhancement-ultra { color: #FFD700; }
+    .enhancement-secret { color: #FF69B4; }
+    .enhancement-ultimate { color: #FF4500; text-shadow: 0 0 10px #FF4500; }
   </style>
 
   <!-- Firebase -->
@@ -134,7 +210,7 @@
 
   <h1>희귀 아이템 뽑기</h1>
   <h1>(Made by 범서)</h1>
-  <h1>Ver. 1.0</h1>
+  <h1>Ver. 2.0 - 합성 시스템</h1>
   <div id="userStatus">로그인 상태를 확인 중입니다...</div>
   <div>
     <button id="loginBtn">Google 로그인</button>
@@ -143,12 +219,46 @@
   <button id="drawBtn" disabled>뽑기하기</button>
   <div id="result">아이템을 뽑아보세요!</div>
 
-  
-
   <section id="inventory" style="display:none;">
     <h2>인벤토리</h2>
     <ul id="inventoryList"></ul>
     <div id="totalMoney">보유 금액: 0 골드</div>
+    
+    <div id="combineSection">
+      <h3>아이템 합성</h3>
+      <p>같은 등급의 아이템 2개를 선택하여 합성하세요!</p>
+      <div id="selectedItems">선택된 아이템: 없음</div>
+      <button id="combineBtn" class="combine-button" disabled>합성하기</button>
+      <button id="clearSelection" style="background: #888; font-size: 1rem; padding: 8px 16px;">선택 초기화</button>
+    </div>
+    <button id="marketBtn">거래장</button>
+
+<!-- 거래장 페이지 -->
+<div id="marketPage" style="display:none;">
+  <h2>📈 주식장</h2>
+  
+  <!-- 검색 -->
+  <input type="text" id="marketSearch" placeholder="아이템 검색...">
+
+  <!-- 필터 -->
+  <div>
+    <label><input type="checkbox" id="filterPrefix"> 접두사 있음</label>
+    <label><input type="checkbox" id="filterRarity"> 희귀도 높은순</label>
+    <label><input type="checkbox" id="filterEnhancement"> 합성 등급 높은순</label>
+  </div>
+
+  <!-- 내 상품 -->
+  <h3>내 상품</h3>
+  <div id="myListings"></div>
+
+  <!-- 등록 가능한 인벤토리 -->
+  <h3>등록하기</h3>
+  <div id="inventoryForMarket"></div>
+
+  <!-- 전체 시장 상품 -->
+  <h3>시장 상품</h3>
+  <div id="marketListings"></div>
+</div>
   </section>
 
   <script>
@@ -174,6 +284,9 @@
     const inventorySection = document.getElementById("inventory");
     const inventoryList = document.getElementById("inventoryList");
     const totalMoneyElem = document.getElementById("totalMoney");
+    const combineBtn = document.getElementById("combineBtn");
+    const selectedItemsElem = document.getElementById("selectedItems");
+    const clearSelectionBtn = document.getElementById("clearSelection");
 
 const items = [
   // C 등급 (48개)
@@ -307,35 +420,43 @@ const items = [
   { name: "간이 엘리베이터", rarity: "UR" },
 ];
 
-  // UR 등
+    // 확률 및 가격 설정
     const rarityRates = {
       C: 0.4, B: 0.3, A: 0.15, S: 0.1, UR: 0.05
     };
+    
+    // 기본 판매 가격 (20원 기준)
     const rarityPrices = {
-      C: 5, B: 10, A: 15, S: 20, UR: 25
+      C: 20, B: 40, A: 60, S: 80, UR: 100
+    };
+    
+    // 합성 등급 확률
+    const enhancementRates = {
+      normal: { great: 0.65, super: 0.17, mega: 0.10, ultra: 0.06, secret: 0.015, ultimate: 0.005 },
+      prefix: { super: 0.70, mega: 0.17, ultra: 0.09, secret: 0.03, ultimate: 0.01 }
+    };
+    
+    // 합성 등급 배율
+    const enhancementMultipliers = {
+      great: 1.1,
+      super: 2,
+      mega: 36,
+      ultra: 100,
+      secret: 1000,
+      ultimate: 6999
     };
 
-    // 전역 변수 (로컬스토리지 불러오기)
+    // 전역 변수
     let pullCount = parseInt(localStorage.getItem("pullCount") || "0");
     let lastDrawTime = parseInt(localStorage.getItem("lastDrawTime") || "0");
     if (!lastDrawTime) lastDrawTime = 0;
     let totalMoney = parseInt(localStorage.getItem("totalMoney") || "0");
     let inventory = JSON.parse(localStorage.getItem("inventory") || "[]");
     let screenStartTime = Date.now();
+    let selectedItems = [];
 
     // 접두사 조건
     const prefixConditions = [
-      // 배터리 관련 (배터리 API 적용)
-      { prefix: "배터리 2%의 ", condition: ctx => ctx.battery === 2 },
-      { prefix: "배터리 7%의 ", condition: ctx => ctx.battery === 7 },
-      { prefix: "배터리 36%의 ", condition: ctx => ctx.battery === 36 },
-      { prefix: "배터리 44%의 ", condition: ctx => ctx.battery === 44 },
-      { prefix: "배터리 66%의 ", condition: ctx => ctx.battery === 66 },
-      { prefix: "배터리 69%의 ", condition: ctx => ctx.battery === 69 },
-      { prefix: "배터리 77%의 ", condition: ctx => ctx.battery === 77 },
-      { prefix: "배터리 100%의 ", condition: ctx => ctx.battery === 100 },
-      { prefix: "배터리 5%의 ", condition: ctx => ctx.battery === 5 },
-
       // 초 단위
       { prefix: "5초의 ", condition: ctx => ctx.seconds === 5 },
       { prefix: "15초의 ", condition: ctx => ctx.seconds === 15 },
@@ -348,15 +469,14 @@ const items = [
       { prefix: "50초의 ", condition: ctx => ctx.seconds === 50 },
       { prefix: "55초의 ", condition: ctx => ctx.seconds === 55 },
 
-
       // 분 단위
-      { prefix: "분 10분의 ", condition: ctx => ctx.minute === 10 },
-      { prefix: "분 15분의 ", condition: ctx => ctx.minute === 15 },
-      { prefix: "분 20분의 ", condition: ctx => ctx.minute === 20 },
-      { prefix: "분 30분의 ", condition: ctx => ctx.minute === 30 },
-      { prefix: "분 35분의 ", condition: ctx => ctx.minute === 35 },
-      { prefix: "분 45분의 ", condition: ctx => ctx.minute === 45 },
-      { prefix: "분 50분의 ", condition: ctx => ctx.minute === 50 },
+      { prefix: "10분의 ", condition: ctx => ctx.minute === 10 },
+      { prefix: "15분의 ", condition: ctx => ctx.minute === 15 },
+      { prefix: "20분의 ", condition: ctx => ctx.minute === 20 },
+      { prefix: "30분의 ", condition: ctx => ctx.minute === 30 },
+      { prefix: "35분의 ", condition: ctx => ctx.minute === 35 },
+      { prefix: "45분의 ", condition: ctx => ctx.minute === 45 },
+      { prefix: "50분의 ", condition: ctx => ctx.minute === 50 },
 
       // 시 단위
       { prefix: "0시의 ", condition: ctx => ctx.hour === 0 },
@@ -392,40 +512,32 @@ const items = [
       { prefix: "금요일의 ", condition: ctx => ctx.weekday === 5 },
       { prefix: "토요일의 ", condition: ctx => ctx.weekday === 6 },
 
-      // 뽑기 횟수
-  
-      { prefix: "1000+ 뽑기의 ", condition: ctx => ctx.pullCount >= 1000 },
-
       // 유입 경로
       { prefix: "구글러의 ", condition: ctx => ctx.referrer.includes("google") },
-      { prefix: "네이버 유저의 ", condition: ctx => ctx.referrer.includes("naver") },
+      { prefix: "네이버의 ", condition: ctx => ctx.referrer.includes("naver") },
 
       // 5,10,15분만에 다시 뽑기
-      { prefix: "5분만에 다시 뽑은 ", condition: ctx => ctx.timeSinceLastDraw >= 5*60*1000 && ctx.timeSinceLastDraw < 10*60*1000 },
-      { prefix: "10분만에 다시 뽑은 ", condition: ctx => ctx.timeSinceLastDraw >= 10*60*1000 && ctx.timeSinceLastDraw < 15*60*1000 },
-      { prefix: "15분만에 다시 뽑은 ", condition: ctx => ctx.timeSinceLastDraw >= 15*60*1000 },
+      { prefix: "5분만에다시뽑은 ", condition: ctx => ctx.timeSinceLastDraw >= 5*60*1000 && ctx.timeSinceLastDraw < 10*60*1000 },
+      { prefix: "10분만에다시뽑은 ", condition: ctx => ctx.timeSinceLastDraw >= 10*60*1000 && ctx.timeSinceLastDraw < 15*60*1000 },
+      { prefix: "15분만에다시뽑은 ", condition: ctx => ctx.timeSinceLastDraw >= 15*60*1000 },
 
       // 화면 켜진 시간 (10분 단위, 높은 시간 우선)
-      { prefix: "50분 이상 켠 ", condition: ctx => ctx.screenTime >= 50*60*1000 },
-      { prefix: "40분 이상 켠 ", condition: ctx => ctx.screenTime >= 40*60*1000 && ctx.screenTime < 50*60*1000 },
-      { prefix: "30분 이상 켠 ", condition: ctx => ctx.screenTime >= 30*60*1000 && ctx.screenTime < 40*60*1000 },
-      { prefix: "20분 이상 켠 ", condition: ctx => ctx.screenTime >= 20*60*1000 && ctx.screenTime < 30*60*1000 },
-      { prefix: "10분 이상 켠 ", condition: ctx => ctx.screenTime >= 10*60*1000 && ctx.screenTime < 20*60*1000 },
+      { prefix: "50분이상켠 ", condition: ctx => ctx.screenTime >= 50*60*1000 },
+      { prefix: "40분이상켠 ", condition: ctx => ctx.screenTime >= 40*60*1000 && ctx.screenTime < 50*60*1000 },
+      { prefix: "30분이상켠 ", condition: ctx => ctx.screenTime >= 30*60*1000 && ctx.screenTime < 40*60*1000 },
+      { prefix: "20분이상켠 ", condition: ctx => ctx.screenTime >= 20*60*1000 && ctx.screenTime < 30*60*1000 },
+      { prefix: "10분이상켠 ", condition: ctx => ctx.screenTime >= 10*60*1000 && ctx.screenTime < 20*60*1000 },
 
       // 플랫폼
       { prefix: "윈도우의 ", condition: ctx => ctx.platform === "Windows" },
       { prefix: "안드로이드의 ", condition: ctx => ctx.platform === "Android" },
       { prefix: "iOS의 ", condition: ctx => ctx.platform === "iOS" },
 
-      // 밝기 (시뮬레이션 고정값)
-      { prefix: "매우 성능 좋은 ", condition: ctx => ctx.brightness === "max" },
-      { prefix: "매우 성능이 떨어지는 ", condition: ctx => ctx.brightness === "min" },
-];
-
-
+      // 그냥 (시뮬레이션 고정값)
+      { prefix: "매우성능좋은 ", condition: ctx => ctx.brightness === "max" },
+    ];
 
     // 랜덤 아이템 뽑기 함수
-
     function getRandomItem() {
       const rand = Math.random();
       let cumulative = 0;
@@ -493,6 +605,99 @@ const items = [
       return prefix;
     }
 
+    // 합성 등급 결정 함수
+    function getEnhancementLevel(hasPrefix) {
+      const rates = hasPrefix ? enhancementRates.prefix : enhancementRates.normal;
+      const rand = Math.random();
+      let cumulative = 0;
+      
+      for (const [level, rate] of Object.entries(rates)) {
+        cumulative += rate;
+        if (rand <= cumulative) {
+          return level;
+        }
+      }
+      return hasPrefix ? 'super' : 'great'; // 기본값
+    }
+
+    // 아이템 가격 계산 함수
+function calculateItemPrice(item) {
+  let basePrice = rarityPrices[item.rarity] || 20;
+
+  // 접두사 개수에 따라 배율 적용 (10^개수)
+  if (item.prefix && item.prefix.trim() !== '') {
+    const prefixCount = item.prefix.trim().split(/\s+/).filter(p => p !== '').length;
+    basePrice *= Math.pow(10, prefixCount);
+  }
+
+  // 합성 등급 배율 적용
+  if (item.enhancement) {
+    basePrice *= enhancementMultipliers[item.enhancement];
+  }
+
+  return Math.floor(basePrice);
+}
+
+    // 아이템 표시 이름 생성 함수
+    function getItemDisplayName(item) {
+      let name = "";
+      
+      if (item.enhancement) {
+        const enhancementNames = {
+          great: "그래이트",
+          super: "슈퍼",
+          mega: "메가",
+          ultra: "울트라",
+          secret: "시크릿",
+          ultimate: "얼티메이트"
+        };
+        name += `[${enhancementNames[item.enhancement]}] `;
+      }
+      
+      if (item.prefix && item.prefix.trim() !== '') {
+        name += item.prefix;
+      }
+      
+      name += item.name;
+      
+      return name;
+    }
+
+    // 합성 가능한 아이템인지 확인하는 함수
+    function canCombineItems(item1, item2) {
+      if (!item1 || !item2) return false;
+      if (item1.rarity !== item2.rarity) return false;
+      
+      // 접두사 확인
+      const prefix1 = item1.prefix || '';
+      const prefix2 = item2.prefix || '';
+      
+      if (prefix1 !== prefix2) return false;
+      
+      return true;
+    }
+
+    // 선택된 아이템 업데이트 함수
+    function updateSelectedItems() {
+      if (selectedItems.length === 0) {
+        selectedItemsElem.textContent = "선택된 아이템: 없음";
+        combineBtn.disabled = true;
+      } else if (selectedItems.length === 1) {
+        const item = inventory[selectedItems[0]];
+        selectedItemsElem.innerHTML = `선택된 아이템: ${getItemDisplayName(item)} [${item.rarity}]`;
+        combineBtn.disabled = true;
+      } else if (selectedItems.length === 2) {
+        const item1 = inventory[selectedItems[0]];
+        const item2 = inventory[selectedItems[1]];
+        selectedItemsElem.innerHTML = `선택된 아이템: ${getItemDisplayName(item1)} [${item1.rarity}] + ${getItemDisplayName(item2)} [${item2.rarity}]`;
+        combineBtn.disabled = !canCombineItems(item1, item2);
+        
+        if (!canCombineItems(item1, item2)) {
+          selectedItemsElem.innerHTML += " <span style='color: #ff4444;'>(합성 불가)</span>";
+        }
+      }
+    }
+
 auth.onAuthStateChanged(user => {
   if (user) {
     userStatus.textContent = `로그인 중: ${user.displayName || user.email}`;
@@ -500,18 +705,29 @@ auth.onAuthStateChanged(user => {
     logoutBtn.style.display = "inline-block";
     drawBtn.disabled = false;
     inventorySection.style.display = "block";
+
+    // Firestore에 사용자 정보 추가
+    const userRef = db.collection("users").doc(user.uid);
+    userRef.get().then(doc => {
+      if (!doc.exists) {
+        userRef.set({
+          name: user.displayName || "익명",
+          email: user.email || "",
+          gold: totalMoney,
+          inventory: inventory
+        });
+      }
+    });
+
     renderInventory();
     startCooldownTimer();
   } else {
-  userStatus.textContent = "로그인 해주세요.";
-  loginBtn.style.display = "inline-block";
-  logoutBtn.style.display = "none";
-  drawBtn.disabled = true;
-  inventorySection.style.display = "none";
-
-  const timerElem = document.getElementById("cooldownTimer");
-  if (timerElem) timerElem.textContent = "";
-}
+    userStatus.textContent = "로그인 해주세요.";
+    loginBtn.style.display = "inline-block";
+    logoutBtn.style.display = "none";
+    drawBtn.disabled = true;
+    inventorySection.style.display = "none";
+  }
 });
 
 
@@ -531,42 +747,211 @@ auth.onAuthStateChanged(user => {
     // 인벤토리 렌더링
     function renderInventory() {
       inventoryList.innerHTML = "";
+      // selectedItems = []; // 이 줄을 제거! 선택 상태를 유지해야 함
+      updateSelectedItems();
+      
       if (inventory.length === 0) {
         inventoryList.innerHTML = "<li>인벤토리가 비어있습니다.</li>";
       } else {
         inventory.forEach((item, idx) => {
           const li = document.createElement("li");
-          li.textContent = `${item.prefix || ''}${item.name} [${item.rarity}]`;
-
+          
+          const itemInfo = document.createElement("div");
+          itemInfo.className = "item-info";
+          
+          let displayName = getItemDisplayName(item);
+          let priceInfo = ` (${calculateItemPrice(item)} 골드)`;
+          
+          // 합성 등급별 색상 적용
+          if (item.enhancement) {
+            itemInfo.innerHTML = `<span class="enhancement-${item.enhancement}">${displayName}</span> [${item.rarity}]${priceInfo}`;
+          } else {
+            itemInfo.innerHTML = `${displayName} [${item.rarity}]${priceInfo}`;
+          }
+          
+          const buttonDiv = document.createElement("div");
+          buttonDiv.className = "item-buttons";
+          
+          const selectBtn = document.createElement("button");
+          selectBtn.textContent = "선택";
+          selectBtn.className = "select-btn";
+          selectBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            selectItem(idx);
+          });
+          
           const sellBtn = document.createElement("button");
           sellBtn.textContent = "판매";
-          sellBtn.onclick = () => sellItem(idx);
-          li.appendChild(sellBtn);
-
+          sellBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            sellItem(idx);
+          });
+          
+          buttonDiv.appendChild(selectBtn);
+          buttonDiv.appendChild(sellBtn);
+          
+          li.appendChild(itemInfo);
+          li.appendChild(buttonDiv);
+          
+          // 선택된 아이템 표시
+          if (selectedItems.includes(idx)) {
+            li.classList.add("selected");
+            selectBtn.textContent = "선택해제";
+            selectBtn.classList.add("selected");
+          }
+          
           inventoryList.appendChild(li);
         });
       }
       totalMoneyElem.textContent = `보유 금액: ${totalMoney} 골드`;
     }
 
-    
+    // 아이템 선택/해제 함수
+    function selectItem(idx) {
+      console.log("선택 함수 호출됨, 인덱스:", idx); // 디버깅용
+      
+      const itemIndex = selectedItems.indexOf(idx);
+      
+      if (itemIndex > -1) {
+        // 이미 선택된 아이템이면 해제
+        selectedItems.splice(itemIndex, 1);
+        console.log("아이템 선택 해제:", idx);
+      } else {
+        // 새로 선택하는 경우
+        if (selectedItems.length >= 2) {
+          alert("최대 2개까지만 선택할 수 있습니다.");
+          return;
+        }
+        selectedItems.push(idx);
+        console.log("아이템 선택:", idx);
+      }
+      
+      console.log("현재 선택된 아이템들:", selectedItems);
+      
+      // renderInventory 호출하지 말고 직접 UI만 업데이트
+      updateInventorySelection();
+      updateSelectedItems();
+    }
+
+    // 인벤토리 선택 상태만 업데이트하는 함수
+    function updateInventorySelection() {
+      const listItems = inventoryList.children;
+      for (let i = 0; i < listItems.length; i++) {
+        const li = listItems[i];
+        const selectBtn = li.querySelector('.select-btn');
+        
+        if (selectedItems.includes(i)) {
+          li.classList.add("selected");
+          if (selectBtn) {
+            selectBtn.textContent = "선택해제";
+            selectBtn.classList.add("selected");
+          }
+        } else {
+          li.classList.remove("selected");
+          if (selectBtn) {
+            selectBtn.textContent = "선택";
+            selectBtn.classList.remove("selected");
+          }
+        }
+      }
+    }
 
     // 아이템 판매 함수
     function sellItem(idx) {
       const item = inventory[idx];
       if (!item) return;
-      const price = rarityPrices[item.rarity] || 0;
+      
+      const price = calculateItemPrice(item);
       totalMoney += price;
+      
+      // 선택된 아이템 목록에서 제거
+      const selectedIndex = selectedItems.indexOf(idx);
+      if (selectedIndex > -1) {
+        selectedItems.splice(selectedIndex, 1);
+      }
+      
+      // 인덱스 조정 (삭제된 아이템보다 뒤에 있는 선택된 아이템들의 인덱스를 1씩 감소)
+      selectedItems = selectedItems.map(selectedIdx => selectedIdx > idx ? selectedIdx - 1 : selectedIdx);
+      
       inventory.splice(idx, 1);
       localStorage.setItem("inventory", JSON.stringify(inventory));
       localStorage.setItem("totalMoney", totalMoney);
       renderInventory();
-      alert(`${item.prefix || ''}${item.name}을(를) ${price} 골드에 판매했습니다.`);
+      updateSelectedItems();
+      alert(`${getItemDisplayName(item)}을(를) ${price} 골드에 판매했습니다.`);
+    }
+
+    // 합성하기 함수
+    function combineItems() {
+      if (selectedItems.length !== 2) {
+        alert("합성하려면 정확히 2개의 아이템을 선택해야 합니다.");
+        return;
+      }
+      
+      const item1 = inventory[selectedItems[0]];
+      const item2 = inventory[selectedItems[1]];
+      
+      if (!canCombineItems(item1, item2)) {
+        alert("선택한 아이템들은 합성할 수 없습니다. (같은 등급 & 같은 접두사여야 함)");
+        return;
+      }
+      
+      // 접두사 여부 확인
+      const hasPrefix = (item1.prefix && item1.prefix.trim() !== '') || (item2.prefix && item2.prefix.trim() !== '');
+      
+      // 합성 등급 결정
+      const enhancementLevel = getEnhancementLevel(hasPrefix);
+      
+      // 새로운 아이템 생성 (첫 번째 아이템을 베이스로)
+      const newItem = {
+        ...item1,
+        enhancement: enhancementLevel
+      };
+      
+      // 기존 아이템들 제거 (인덱스가 큰 것부터 제거)
+      const sortedIndices = selectedItems.sort((a, b) => b - a);
+      for (const idx of sortedIndices) {
+        inventory.splice(idx, 1);
+      }
+      
+      // 새 아이템 추가
+      inventory.push(newItem);
+      
+      // 저장
+      localStorage.setItem("inventory", JSON.stringify(inventory));
+      
+      // 선택 초기화
+      selectedItems = [];
+      
+      // UI 업데이트
+      renderInventory();
+      updateSelectedItems();
+      
+      const enhancementNames = {
+        great: "그래이트",
+        super: "슈퍼", 
+        mega: "메가",
+        ultra: "울트라",
+        secret: "시크릿",
+        ultimate: "얼티메이트"
+      };
+      
+      alert(`합성 성공! ${enhancementNames[enhancementLevel]} 등급의 ${getItemDisplayName(newItem)}이 생성되었습니다!`);
+    }
+
+    // 선택 초기화 함수
+    function clearSelection() {
+      selectedItems = [];
+      updateInventorySelection();
+      updateSelectedItems();
+      console.log("선택 초기화됨");
     }
 
     // 쿨다운 및 뽑기 버튼 관리
     function startCooldownTimer() {
-      const COOLDOWN_MS = 5000; // 10초
+      const COOLDOWN_MS = 5000; // 5초
       let intervalId = null;
 
       function update() {
@@ -600,51 +985,281 @@ auth.onAuthStateChanged(user => {
     let stopCooldown = startCooldownTimer();
 
     // 뽑기 버튼 이벤트
-    drawBtn.addEventListener("click", async () => {
-      if (drawBtn.disabled) return;
+drawBtn.addEventListener("click", async () => {
+  if (drawBtn.disabled) return;
 
-      const ctx = await getContext();
+  // 인벤토리 25개 제한 체크
+  if (inventory.length >= 10) {
+    alert("인벤토리가 가득 찼습니다! (최대 10개)");
+    return;
+  }
 
-      pullCount++;
-      lastDrawTime = Date.now();
-      localStorage.setItem("pullCount", pullCount);
-      localStorage.setItem("lastDrawTime", lastDrawTime);
+  const ctx = await getContext();
 
-      const item = getRandomItem();
-      const prefix = generatePrefix(ctx);
-      const fullName = prefix + item.name;
+  pullCount++;
+  lastDrawTime = Date.now();
+  localStorage.setItem("pullCount", pullCount);
+  localStorage.setItem("lastDrawTime", lastDrawTime);
 
-      // 인벤토리에 저장
-      const inventoryItem = { ...item, prefix };
-      inventory.push(inventoryItem);
-      localStorage.setItem("inventory", JSON.stringify(inventory));
+  const item = getRandomItem();
+  const prefix = generatePrefix(ctx);
+  const fullName = prefix + item.name;
 
-      document.getElementById("result").textContent = `뽑은 아이템: ${fullName} [${item.rarity}]`;
+  // 인벤토리에 저장
+  const inventoryItem = { ...item, prefix };
+  inventory.push(inventoryItem);
+  localStorage.setItem("inventory", JSON.stringify(inventory));
 
-      renderInventory();
+  document.getElementById("result").textContent = `뽑은 아이템: ${fullName} [${item.rarity}]`;
 
-      // Firebase 기록 저장 (로그인 시만)
-      const user = auth.currentUser;
-      if (user) {
-        try {
-          await db.collection("pulls").add({
-            userId: user.uid,
-            userName: user.displayName,
-            item: fullName,
-            rarity: item.rarity,
-            context: ctx,
-            timestamp: new Date()
-          });
-        } catch (e) {
-          console.error("Firebase 저장 실패:", e);
-        }
+  renderInventory();
+
+  // Firebase 기록 저장 (로그인 시만)
+  const user = auth.currentUser;
+  if (user) {
+    try {
+      await db.collection("pulls").add({
+        userId: user.uid,
+        userName: user.displayName,
+        item: fullName,
+        rarity: item.rarity,
+        context: ctx,
+        timestamp: new Date()
+      });
+    } catch (e) {
+      console.error("Firebase 저장 실패:", e);
+    }
+  }
+
+  // 쿨다운 다시 시작
+  stopCooldown();
+  stopCooldown = startCooldownTimer();
+});
+
+    // 합성 버튼 이벤트
+    combineBtn.addEventListener("click", combineItems);
+
+    // 선택 초기화 버튼 이벤트
+    clearSelectionBtn.addEventListener("click", clearSelection);
+    let marketListings = JSON.parse(localStorage.getItem("marketListings")) || [];
+let myListings = JSON.parse(localStorage.getItem("myListings")) || [];
+let gold = JSON.parse(localStorage.getItem("gold")) || 1000; // 유저 돈
+
+// 주식장 페이지 렌더링
+async function renderMarket() {
+  const marketDiv = document.getElementById("marketListings");
+  const myDiv = document.getElementById("myListings");
+  const inventoryDiv = document.getElementById("inventoryForMarket");
+
+  marketDiv.innerHTML = "";
+  myDiv.innerHTML = "";
+  inventoryDiv.innerHTML = "";
+
+  const user = auth.currentUser;
+  if (!user) {
+    myDiv.innerHTML = "<p>로그인 후 이용 가능합니다.</p>";
+    return;
+  }
+
+  // 검색 & 필터 값
+  const searchValue = document.getElementById("marketSearch").value.toLowerCase();
+  const filterPrefix = document.getElementById("filterPrefix").checked;
+  const filterRarity = document.getElementById("filterRarity").checked;
+  const filterEnhancement = document.getElementById("filterEnhancement").checked;
+
+  // 내 인벤토리 불러오기
+  const userSnap = await db.ref(`users/${user.uid}`).once("value");
+  const userData = userSnap.val() || {};
+  const inventoryData = userData.inventory || [];
+  const myGold = userData.gold || 0;
+
+  // 🔹 내 상품 렌더링
+  const myListingsSnap = await db.ref("market/listings").orderByChild("seller").equalTo(user.uid).once("value");
+  myListingsSnap.forEach(child => {
+    const listing = child.val();
+    const div = document.createElement("div");
+    div.textContent = `${getItemDisplayName(listing.item)} - ${listing.price}골드`;
+
+    const withdrawBtn = document.createElement("button");
+    withdrawBtn.textContent = "회수";
+    withdrawBtn.onclick = () => withdrawListing(child.key, listing);
+
+    div.appendChild(withdrawBtn);
+    myDiv.appendChild(div);
+  });
+
+  // 🔹 등록 가능한 인벤토리 표시
+  inventoryData.forEach((item, idx) => {
+    const div = document.createElement("div");
+    div.textContent = `${getItemDisplayName(item)} (기본가: ${calculateItemPrice(item)}골드)`;
+
+    const suggested = getSuggestedPrice(item);
+    const priceInput = document.createElement("input");
+    priceInput.type = "number";
+    priceInput.min = Math.floor(calculateItemPrice(item) * 0.15);
+    priceInput.max = Math.floor(calculateItemPrice(item) * 150);
+    priceInput.value = suggested;
+
+    const registerBtn = document.createElement("button");
+    registerBtn.textContent = "등록";
+    registerBtn.onclick = () => {
+      const price = parseInt(priceInput.value, 10);
+      if (price < priceInput.min || price > priceInput.max) {
+        alert(`가격은 ${priceInput.min} ~ ${priceInput.max} 사이여야 합니다.`);
+        return;
       }
+      registerItemToMarket(item, idx, price);
+    };
 
+    div.appendChild(document.createTextNode(` → 예상가 ${suggested}골드`));
+    div.appendChild(priceInput);
+    div.appendChild(registerBtn);
 
-      // 쿨다운 다시 시작
-      stopCooldown();
-      stopCooldown = startCooldownTimer();
-    });
+    inventoryDiv.appendChild(div);
+  });
+
+  // 🔹 전체 시장 상품 불러오기
+  let listingsSnap = await db.ref("market/listings").once("value");
+  let listings = [];
+  listingsSnap.forEach(child => {
+    listings.push({ id: child.key, ...child.val() });
+  });
+
+  // 검색 & 필터 적용
+  if (searchValue) {
+    listings = listings.filter(l =>
+      l.item.name.toLowerCase().includes(searchValue) ||
+      (l.item.prefix && l.item.prefix.toLowerCase().includes(searchValue))
+    );
+  }
+  if (filterPrefix) {
+    listings = listings.filter(l => l.item.prefix);
+  }
+  if (filterRarity) {
+    listings.sort((a, b) => (rarityPrices[b.item.rarity] || 0) - (rarityPrices[a.item.rarity] || 0));
+  }
+  if (filterEnhancement) {
+    listings.sort((a, b) => (enhancementMultipliers[b.item.enhancement] || 1) - (enhancementMultipliers[a.item.enhancement] || 1));
+  }
+
+  // 🔹 전체 상품 렌더링
+  listings.forEach(listing => {
+    const div = document.createElement("div");
+    div.textContent = `${getItemDisplayName(listing.item)} - ${listing.price}골드`;
+
+    if (listing.seller !== user.uid) {
+      const buyBtn = document.createElement("button");
+      buyBtn.textContent = "구매";
+      buyBtn.onclick = () => buyListing(listing);
+      div.appendChild(buyBtn);
+    } else {
+      div.appendChild(document.createTextNode(" (내 물건)"));
+    }
+
+    marketDiv.appendChild(div);
+  });
+}
+
+// 아이템 등록
+async function registerItemToMarket(item, index, price) {
+  const user = auth.currentUser;
+  if (!user) return alert("로그인 필요");
+
+  const myListingsSnap = await db.ref("market/listings").orderByChild("seller").equalTo(user.uid).once("value");
+  if (myListingsSnap.numChildren() >= 3) {
+    return alert("최대 3개까지 등록 가능합니다!");
+  }
+
+  const newListingRef = db.ref("market/listings").push();
+  await newListingRef.set({
+    seller: user.uid,
+    item,
+    price
+  });
+
+  // 인벤토리에서 제거
+  const invRef = db.ref(`users/${user.uid}/inventory`);
+  const invSnap = await invRef.once("value");
+  let invArr = invSnap.val() || [];
+  invArr.splice(index, 1);
+  await invRef.set(invArr);
+
+  renderMarket();
+  renderInventory();
+}
+
+// 회수
+async function withdrawListing(listingId, listing) {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  await db.ref(`market/listings/${listingId}`).remove();
+
+  // 다시 인벤토리에 복구
+  const invRef = db.ref(`users/${user.uid}/inventory`);
+  const invSnap = await invRef.once("value");
+  let invArr = invSnap.val() || [];
+  invArr.push(listing.item);
+  await invRef.set(invArr);
+
+  renderMarket();
+  renderInventory();
+}
+
+// 구매
+async function buyListing(listing) {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const buyerRef = db.ref(`users/${user.uid}`);
+  const buyerSnap = await buyerRef.once("value");
+  const buyerData = buyerSnap.val() || {};
+  let buyerGold = buyerData.gold || 0;
+
+  if (buyerGold < listing.price) {
+    return alert("골드가 부족합니다!");
+  }
+
+  // 구매자 골드 차감
+  buyerGold -= listing.price;
+  let buyerInv = buyerData.inventory || [];
+  buyerInv.push(listing.item);
+
+  await buyerRef.update({ gold: buyerGold, inventory: buyerInv });
+
+  // 판매자 골드 지급
+  if (listing.seller) {
+    const sellerRef = db.ref(`users/${listing.seller}`);
+    const sellerSnap = await sellerRef.once("value");
+    const sellerData = sellerSnap.val() || {};
+    let sellerGold = sellerData.gold || 0;
+    sellerGold += listing.price;
+    await sellerRef.update({ gold: sellerGold });
+  }
+
+  // 시장에서 제거
+  await db.ref(`market/listings/${listing.id}`).remove();
+
+  renderMarket();
+  renderInventory();
+}
+
+// 예상 금액 계산
+function getSuggestedPrice(item) {
+  return Math.floor(calculateItemPrice(item) * 1.1);
+}
+
+// 이벤트 등록
+document.getElementById("marketSearch").addEventListener("input", renderMarket);
+document.getElementById("filterPrefix").addEventListener("change", renderMarket);
+document.getElementById("filterRarity").addEventListener("change", renderMarket);
+document.getElementById("filterEnhancement").addEventListener("change", renderMarket);
+
+document.getElementById("marketBtn").addEventListener("click", () => {
+  document.getElementById("marketPage").style.display = "block";
+  renderMarket();
+});
+
   </script>
 
 </body>
